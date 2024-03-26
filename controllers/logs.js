@@ -7,14 +7,14 @@ const Users = require("../models/User.model");
 const { log } = require("../middleware/logger/logger");
 const { sendError, sendServerError } = require("../util/Responses");
 
-exports.sendLogFile = async (req, res) => {
+exports.sendLogFile = async (request, response) => {
   try {
-    const userId = req.user._id.toString();
+    const userId = request.user._id.toString();
     const user = await Users.findById({ _id: userId });
     const logs = await logModel.find({});
 
     if (logs.length === 0) {
-      sendError(res, "No Logs found");
+      sendError(response, "No Logs found");
     }
 
     const csvWriter = createCsvWriter({
@@ -30,7 +30,7 @@ exports.sendLogFile = async (req, res) => {
     });
 
     log(
-      req,
+      request,
       `${user.name} Downloaded the Log File`,
       "controllers/logs.js/sendLogFile",
       "api request",
@@ -52,11 +52,11 @@ exports.sendLogFile = async (req, res) => {
     csvWriter
       .writeRecords(logs)
       .then(() => {
-        res.setHeader("Content-Type", "text/csv");
-        res.setHeader("Content-Disposition", "attachment; filename=logs.csv");
+        response.setHeader("Content-Type", "text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=logs.csv");
 
         const fileStream = fs.createReadStream("logs.csv");
-        fileStream.pipe(res);
+        fileStream.pipe(response);
 
         fileStream.on("end", () => {
           fs.unlinkSync("logs.csv");
@@ -65,55 +65,55 @@ exports.sendLogFile = async (req, res) => {
       .catch((error) => {
         console.log(error);
         log(
-          req,
+          request,
           "Error Occurred While Downloading the Log File",
           "controllers/logs.js/sendLogFile-creating CSV file",
           "api request",
           "error"
         );
-        sendServerError(res);
+        sendServerError(response);
       });
   } catch (error) {
     console.log(error);
     log(
-      req,
+      request,
       "Error Occurred While Downloading the Log File",
       "controllers/logs.js/sendLogFile",
       "api request",
       "error"
     );
-    sendServerError(res);
+    sendServerError(response);
   }
 };
 
-exports.getRecentLogs = async (req, res) => {
+exports.getRecentLogs = async (request, response) => {
   try {
-    const userId = req.user._id.toString();
+    const userId = request.user._id.toString();
 
     const user = await Users.findById({ _id: userId });
 
     const logs = await logModel.find({}).sort({ _id: -1 }).limit(10);
     if (logs.length === 0) {
-      sendError(res, "No Logs found");
+      sendError(response, "No Logs found");
     }
 
     log(
-      req,
+      request,
       `${user.name} Fetched Recent 10 Logs`,
       "controllers/logs.js/getRecentLogs",
       "api request",
       "info"
     );
 
-    res.status(200).json({ success: true, logs });
+    response.status(200).json({ success: true, logs });
   } catch (error) {
     log(
-      req,
+      request,
       `Error Occured While Fetching Recent 10 Logs`,
       "controllers/logs.js/getRecentLogs",
       "api request",
       "error"
     );
-    sendServerError(res);
+    sendServerError(response);
   }
 };

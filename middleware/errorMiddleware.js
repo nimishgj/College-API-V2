@@ -1,5 +1,5 @@
-exports.notFound = (req, res, next) => {
-  const error = new Error(`Resources Not Found - ${req.originalUrl}`);
-  res.status(404);
+exports.notFound = (request, response, next) => {
+  const error = new Error(`Resources Not Found - ${request.originalUrl}`);
+  response.status(404);
   next(error);
 };

@@ -1,11 +1,11 @@
 const jwt = require("jsonwebtoken");
 
-exports.generateToken = (res, userId) => {
+exports.generateToken = (response, userId) => {
   const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
     expiresIn: "5d",
   });
 
-  res.cookie("jwt", token, {
+  response.cookie("jwt", token, {
     path: "/",
     httpOnly: false,
     priority: "high",

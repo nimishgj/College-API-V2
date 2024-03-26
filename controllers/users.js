@@ -19,22 +19,22 @@ exports.validateUser = async (userId) => {
   if (user) return user;
 };
 
-exports.createUser = async (req, res) => {
+exports.createUser = async (request, response) => {
   try {
-    const { name, email, password, department, role } = req.body;
+    const { name, email, password, department, role } = request.body;
 
     if (!name || !email || !password || !department || !role)
-      return sendInvalidParameterResponse(res);
+      return sendInvalidParameterResponse(response);
 
     if (!email.endsWith("git.edu"))
-      return sendError(res, "Please Enter the College Email ID");
+      return sendError(response, "Please Enter the College Email ID");
 
     //TODO: check for Password Strength
     const userName = await Users.findOne({ name: name });
-    if (userName) return sendError(res, "Name Already Exists");
+    if (userName) return sendError(response, "Name Already Exists");
 
     const user = await Users.findOne({ email });
-    if (user) return sendError(res, "The email already exists.");
+    if (user) return sendError(response, "The email already exists.");
     const newUser = new Users({
       name,
       email,
@@ -48,9 +48,9 @@ exports.createUser = async (req, res) => {
     }
 
     if (newUser) {
-      generateToken(res, newUser._id);
+      generateToken(response, newUser._id);
     } else {
-      return sendError(res, "Some error occured while creating user");
+      return sendError(response, "Some error occured while creating user");
     }
 
     const OTP = generateOtp();
@@ -63,7 +63,7 @@ exports.createUser = async (req, res) => {
     await verificationToken.save();
 
     log(
-      req,
+      request,
       `${newUser.name} Generated New Verification Token with ObjectID ${verificationToken._id} for Account Verification`,
       "controllers/users.js/createUser",
       "sign up",
@@ -90,102 +90,102 @@ exports.createUser = async (req, res) => {
     await newUser.save();
 
     log(
-      req,
+      request,
       `${newUser.name} Created an Unverified Account`,
       "controllers/users.js/createUser",
       "sign up",
       "info"
     );
 
-    res.send({
+    response.send({
       success: true,
       message: "User Created Successfully.Please Verify your Email",
     });
   } catch (error) {
     console.log(error);
     log(
-      req,
+      request,
       `Error Occured While Creating User`,
       "controllers/users.js/createUser",
       "sign up",
       "error"
     );
 
-    sendServerError(res);
+    sendServerError(response);
   }
 };
 
-exports.verifyEmail = async (req, res) => {
+exports.verifyEmail = async (request, response) => {
   try {
-    const { token } = req.body;
-    const userId = req.user._id;
+    const { token } = request.body;
+    const userId = request.user._id;
 
-    if (!userId || !token) return sendInvalidParameterResponse(res);
+    if (!userId || !token) return sendInvalidParameterResponse(response);
 
     const user = await Users.findById(userId);
-    if (!user) return sendError(res, "No such user found.");
+    if (!user) return sendError(response, "No such user found.");
 
     if (user.isVerified)
-      return sendError(res, "This account is already verified");
+      return sendError(response, "This account is already verified");
 
     const verificationToken = await userVerification.findOne({
       owner: userId,
       token,
     });
-    if (!verificationToken) return sendError(res, "Invalid Token");
+    if (!verificationToken) return sendError(response, "Invalid Token");
 
     user.isVerified = true;
     await user.save();
     await userVerification.findByIdAndDelete(verificationToken._id);
 
     log(
-      req,
+      request,
       `${user.name} Verified their Email`,
       "controllers/users.js/verifyEmail",
       "sign up",
       "info"
     );
-    res.send({
+    response.send({
       success: true,
       message: "Account Verified Please Login to Continue",
       role: user.role,
     });
   } catch (error) {
     log(
-      req,
+      request,
       `Error Occured While Verifying Email`,
       "controllers/users.js/verifyEmail",
       "sign up",
       "error"
     );
-    sendServerError(res);
+    sendServerError(response);
   }
 };
 
-exports.login = async (req, res) => {
+exports.login = async (request, response) => {
   try {
-    let { email, password, role } = req.body;
+    let { email, password, role } = request.body;
 
-    if (!email || !password || !role) return sendInvalidParameterResponse(res);
+    if (!email || !password || !role) return sendInvalidParameterResponse(response);
 
     const user = await Users.findOne({ email });
-    if (!user) return sendError(res, "Invalid email");
+    if (!user) return sendError(response, "Invalid email");
     if (!(await user.matchPassword(password))) {
-      return sendError(res, "Invalid password");
+      return sendError(response, "Invalid password");
     } else {
-      if (user.role != role) return sendError(res, "Invalid Role");
+      if (user.role != role) return sendError(response, "Invalid Role");
 
-      if (!user.isVerified) return sendError(res, "Please verify your email");
-      generateToken(res, user._id);
+      if (!user.isVerified) return sendError(response, "Please verify your email");
+      generateToken(response, user._id);
       await log(
-        req,
+        request,
         `${user.name} Logged In`,
         "controllers/users.js/login",
         "sign in",
         "info"
       );
 
-      res.json({
+      response.json({
         success: true,
         message: "Login Successful",
         _id: user._id,
@@ -196,45 +196,45 @@ exports.login = async (req, res) => {
     }
   } catch (error) {
     log(
-      req,
+      request,
       `Error Occured While Logging In`,
       "controllers/users.js/login",
       "sign in",
       "error"
     );
-    sendServerError(res);
+    sendServerError(response);
   }
 };
 
-exports.logout = (req, res) => {
+exports.logout = (request, response) => {
   try {
-    res.cookie("jwt", "", {
+    response.cookie("jwt", "", {
       httpOnly: true,
       expires: new Date(0),
     });
     log(
-      req,
-      `${req.user.name} Logged Out`,
+      request,
+      `${request.user.name} Logged Out`,
       "controllers/users.js/logout",
       "sign out",
       "info"
     );
-    res.status(200).json({ success: true, message: "Logged out successfully" });
+    response.status(200).json({ success: true, message: "Logged out successfully" });
   } catch (error) {
     log(
-      req,
+      request,
       `Error Occured While Logging Out`,
       "controllers/users.js/logout",
       "sign out",
       "error"
     );
-    sendServerError(res);
+    sendServerError(response);
   }
 };
 
-exports.changePasswordRequest = async (req, res) => {
+exports.changePasswordRequest = async (request, response) => {
   try {
-    const userId = req.user._id.toString();
+    const userId = request.user._id.toString();
 
     const user = await Users.findById(userId);
 
@@ -247,7 +247,7 @@ exports.changePasswordRequest = async (req, res) => {
     await verificationToken.save();
 
     log(
-      req,
+      request,
       `${user.name} Generated New Verification Token with ObjectID ${verificationToken._id} for Password Reset`,
       "controllers/users.js/changePasswordRequest",
       "api request",
@@ -270,28 +270,28 @@ exports.changePasswordRequest = async (req, res) => {
         }
       }
     );
-    res
+    response
       .status(200)
       .json({ success: true, message: "Email sent successfully." });
   } catch (error) {
     log(
-      req,
+      request,
       `Error Occured While Generating Verification Token for Password Reset`,
       "controllers/users.js/changePasswordRequest",
       "api request",
       "error"
     );
-    sendServerError(res);
+    sendServerError(response);
   }
 };
 
-exports.changePassword = async (req, res) => {
+exports.changePassword = async (request, response) => {
   try {
-    const { token, password } = req.body;
-    const userId = req.user._id.toString();
+    const { token, password } = request.body;
+    const userId = request.user._id.toString();
 
     if (!userId || !token || !password)
-      return sendInvalidParameterResponse(res);
+      return sendInvalidParameterResponse(response);
 
     const user = await Users.findById(userId);
 
@@ -299,40 +299,40 @@ exports.changePassword = async (req, res) => {
       owner: userId,
       token,
     });
-    if (!verificationToken) return sendError(res, "Invalid Token");
+    if (!verificationToken) return sendError(response, "Invalid Token");
 
     user.password = password;
     await user.save();
     await userVerification.findByIdAndDelete(verificationToken._id);
 
     log(
-      req,
+      request,
       `${user.name} changed their password`,
       "controllers/users.js/changePassword",
       "api request",
       "info"
     );
-    res.send({ success: true, message: "Password Reset Successfully" });
+    response.send({ success: true, message: "Password Reset Successfully" });
   } catch (error) {
     log(
-      req,
+      request,
       `Error Occured While Changing Password`,
       "controllers/users.js/changePassword",
       "api request",
       "error"
     );
-    sendServerError(res);
+    sendServerError(response);
   }
 };
 
-exports.forgotPasswordRequest = async (req, res) => {
+exports.forgotPasswordRequest = async (request, response) => {
   try {
-    const { email } = req.body;
+    const { email } = request.body;
 
-    if (!email) return sendInvalidParameterResponse(res);
+    if (!email) return sendInvalidParameterResponse(response);
 
     const user = await Users.findOne({ email });
-    if (!user) return sendError(res, "User not registered.");
+    if (!user) return sendError(response, "User not registered.");
 
     const OTP = generateOtp();
 
@@ -344,7 +344,7 @@ exports.forgotPasswordRequest = async (req, res) => {
     await verificationToken.save();
 
     log(
-      req,
+      request,
       `${user.name} Generated New Verification Token with ObjectID ${verificationToken._id} for Forgot Password`,
       "controllers/users.js/forgotPasswordRequest",
       "api request",
@@ -367,71 +367,71 @@ exports.forgotPasswordRequest = async (req, res) => {
         }
       }
     );
-    res.status(200).json({
+    response.status(200).json({
       success: true,
       message: "Email sent successfully for Password Reset.",
     });
   } catch (error) {
     log(
-      req,
+      request,
       `Error Occured While Generating Verification Token for Forgot Password`,
       "controllers/users.js/forgotPasswordRequest",
       "api request",
       "error"
     );
-    sendServerError(res);
+    sendServerError(response);
   }
 };
 
-exports.forgotPassword = async (req, res) => {
+exports.forgotPassword = async (request, response) => {
   try {
-    const { email, token, password } = req.body;
+    const { email, token, password } = request.body;
 
-    if (!email || !token || !password) return sendInvalidParameterResponse(res);
+    if (!email || !token || !password) return sendInvalidParameterResponse(response);
 
     const user = await Users.findOne({ email });
-    if (!user) return sendError(res, "No such user found.");
+    if (!user) return sendError(response, "No such user found.");
 
     const verificationToken = await userVerification.findOne({
       owner: user._id,
       token,
     });
-    if (!verificationToken) return sendError(res, "Invalid Token");
+    if (!verificationToken) return sendError(response, "Invalid Token");
 
     user.password = password;
     await user.save();
     await userVerification.findByIdAndDelete(verificationToken._id);
 
     log(
-      req,
+      request,
       `${user.name} changed their password`,
       "controllers/users.js/forgotPassword",
       "api request",
       "info"
     );
 
-    res.send({
+    response.send({
       success: true,
       message: "Password Reset Succesfull.Please Login Again",
     });
   } catch (error) {
     log(
-      req,
+      request,
       `Error Occured While Changing Password`,
       "controllers/users.js/forgotPassword",
       "api request",
       "error"
     );
-    sendServerError(res);
+    sendServerError(response);
   }
 };
 
-exports.deleteUser = async (req, res) => {
+exports.deleteUser = async (request, response) => {
   try {
-    const { deleteDocuments } = req.params;
-    const userId = req.user._id.toString();
+    const { deleteDocuments } = request.params;
+    const userId = request.user._id.toString();
 
-    if (!userId || !deleteDocuments) return sendInvalidParameterResponse(res);
+    if (!userId || !deleteDocuments) return sendInvalidParameterResponse(response);
 
     const user = await Users.findById(userId);
 
@@ -440,7 +440,7 @@ exports.deleteUser = async (req, res) => {
     if (deleteDocuments == true) {
       if (!deleteDocumentByUserName(user.name)) {
         log(
-          req,
+          request,
           `Error Occured While Deleting Documents of ${user.name}`,
           "controllers/users.js/deleteUser",
           "api request",
@@ -448,28 +448,28 @@ exports.deleteUser = async (req, res) => {
         );
 
         return sendError(
-          res,
+          response,
           "Some error occured while deleting documents Please Delete them after Some time"
         );
       }
     }
 
     log(
-      req,
+      request,
       `${user.name} Deleted their Account`,
       "controllers/users.js/deleteUser",
       "api request",
       "info"
     );
-    res.send({ success: true, message: "User Successfully Deleted" });
+    response.send({ success: true, message: "User Successfully Deleted" });
   } catch (error) {
     log(
-      req,
+      request,
       `Error Occured While Deleting User`,
       "controllers/users.js/deleteUser",
       "api request",
       "error"
     );
-    sendServerError(res);
+    sendServerError(response);
   }
 };

@@ -8,12 +8,12 @@ const {
   sendServerError,
 } = require("../util/Responses");
 
-exports.createScheme = async (req, res) => {
+exports.createScheme = async (request, response) => {
   try {
-    const { scheme, subjects } = req.body;
-    const userId = req.user._id.toString();
+    const { scheme, subjects } = request.body;
+    const userId = request.user._id.toString();
     if (!scheme || !subjects || !userId)
-      return sendError(res, "Invalid Parameters Provided");
+      return sendError(response, "Invalid Parameters Provided");
 
     const user = await Users.findById({ _id: userId });
 
@@ -23,86 +23,86 @@ exports.createScheme = async (req, res) => {
     });
     await newScheme.save();
     log(
-      req,
+      request,
       `${user.name} Created Scheme ${scheme}`,
       "controllers/schemes.js/createScheme",
       "api request",
       "info"
     );
-    res
+    response
       .status(200)
       .json({ success: true, message: "Succesfully created Scheme" });
   } catch (error) {
     log(
-      req,
+      request,
       `Error Occured While Creating Scheme ${scheme}`,
       "controllers/schemes.js/createScheme",
       "api request",
       "error"
     );
-    sendServerError(res);
+    sendServerError(response);
   }
 };
 
-exports.getSchemes = async (req, res) => {
+exports.getSchemes = async (request, response) => {
   try {
-    const userId = req.user._id.toString();
+    const userId = request.user._id.toString();
     const user = await Users.findById({ _id: userId });
 
     const schemes = await Scheme.find();
     log(
-      req,
+      request,
       `${user.name} Fetched All Schemes`,
       "controllers/schemes.js/getSchemes",
       "api request",
       "info"
     );
-    res.status(200).json({ success: true, schemes });
+    response.status(200).json({ success: true, schemes });
   } catch (error) {
     log(
-      req,
+      request,
       `Error Occured While Fetching All Schemes`,
       "controllers/schemes.js/getSchemes",
       "api request",
       "error"
     );
-    sendServerError(res);
+    sendServerError(response);
   }
 };
 
-exports.deleteScheme = async (req, res) => {
+exports.deleteScheme = async (request, response) => {
   try {
-    const { schemeId } = req.params;
-    const userId = req.user._id.toString();
-    if (!schemeId || !userId) return sendInvalidParameterResponse(res);
+    const { schemeId } = request.params;
+    const userId = request.user._id.toString();
+    if (!schemeId || !userId) return sendInvalidParameterResponse(response);
     const user = await Users.findById(userId);
 
     // Find the scheme by name
     const scheme = await Scheme.findOneAndDelete({ scheme: schemeId });
 
     if (!scheme) {
-      return sendError(res, "Scheme Not Found");
+      return sendError(response, "Scheme Not Found");
     }
 
     log(
-      req,
+      request,
       `${user.name} Deleted Scheme ${schemeId}`,
       "controllers/schemes.js/deleteScheme",
       "api request",
       "info"
     );
-    res
+    response
       .status(200)
       .json({ success: true, message: "Successfully Deleted Scheme" });
   } catch (error) {
     log(
-      req,
+      request,
       `Error Occured While Deleting Scheme ${schemeId}`,
       "controllers/schemes.js/deleteScheme",
       "api request",
       "error"
     );
-    sendServerError(res);
+    sendServerError(response);
   }
 };
 
@@ -115,63 +115,63 @@ exports.checkScheme = async (currentScheme, currentSubject) => {
   return false;
 };
 
-exports.addSubject = async (req, res) => {
+exports.addSubject = async (request, response) => {
   try {
-    const { schemeId, subjectId } = req.body;
-    const userId = req.user._id.toString();
+    const { schemeId, subjectId } = request.body;
+    const userId = request.user._id.toString();
 
     if (!schemeId || !subjectId || !userId)
-      return sendInvalidParameterResponse(res);
+      return sendInvalidParameterResponse(response);
 
     const user = await Users.findById({ _id: userId });
 
     const scheme = await Scheme.findOne({ scheme: schemeId });
 
-    if (!scheme) return sendError(res, "Scheme Not Found");
+    if (!scheme) return sendError(response, "Scheme Not Found");
 
     scheme.subjects.push(subjectId);
     await scheme.save();
 
     log(
-      req,
+      request,
       `${user.name} Added Subject ${subjectId} to Scheme ${schemeId}`,
       "controllers/schemes.js/addSubject",
       "api request",
       "info"
     );
 
-    res
+    response
       .status(200)
       .json({ success: true, message: "Successfully Added Subject" });
   } catch (error) {
     log(
-      req,
+      request,
       `Error Occured While Adding Subject ${subjectId} to Scheme ${schemeId}`,
       "controllers/schemes.js/addSubject",
       "api request",
       "error"
     );
-    sendServerError(res);
+    sendServerError(response);
   }
 };
 
-exports.deleteSubject = async (req, res) => {
+exports.deleteSubject = async (request, response) => {
   try {
-    const { subjectId } = req.params;
-    const userId = req.user._id.toString();
+    const { subjectId } = request.params;
+    const userId = request.user._id.toString();
 
-    const schemeId = parseInt(req.params.schemeId);
+    const schemeId = parseInt(request.params.schemeId);
 
     if (!schemeId || !subjectId || !userId)
-      return sendInvalidParameterResponse(res);
+      return sendInvalidParameterResponse(response);
 
     const user = await Users.findById({ _id: userId });
 
-    if (!user) return sendError(res, "User Not Found");
+    if (!user) return sendError(response, "User Not Found");
 
     const scheme = await Scheme.findOne({ scheme: schemeId });
 
-    if (!scheme) return sendError(res, "Scheme Not Found");
+    if (!scheme) return sendError(response, "Scheme Not Found");
 
     scheme.subjects = scheme.subjects.filter(
       (subject) => subject !== subjectId
@@ -180,24 +180,24 @@ exports.deleteSubject = async (req, res) => {
     await scheme.save();
 
     log(
-      req,
+      request,
       `${user.name} Deleted Subject ${subjectId} from Scheme ${schemeId}`,
       "controllers/schemes.js/deleteSubject",
       "api request",
       "info"
     );
 
-    res
+    response
       .status(200)
       .json({ success: true, message: "Successfully Deleted Subject" });
   } catch (error) {
     log(
-      req,
+      request,
       `Error Occured While Deleting Subject ${subjectId} from Scheme ${schemeId}`,
       "controllers/schemes.js/deleteSubject",
       "api request",
       "error"
     );
-    sendServerError(res);
+    sendServerError(response);
   }
 };

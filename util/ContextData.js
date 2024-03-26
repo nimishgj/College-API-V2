@@ -1,31 +1,31 @@
 const geoip = require("geoip-lite");
 
-const getCurrentContextData = (req) => {
+const getCurrentContextData = (request) => {
   const ip =
-    req.ip || (req.connection && req.connection.remoteAddress) || "unknown";
+    request.ip || (request.connection && request.connection.remoteAddress) || "unknown";
   const location = geoip.lookup(ip);
   const country = location ? location.country || "unknown" : "unknown";
   const city = location ? location.city || "unknown" : "unknown";
 
-  // Check if req.useragent exists before accessing its properties
+  // Check if request.useragent exists before accessing its properties
   const browser =
-    req.useragent && req.useragent.browser
-      ? `${req.useragent.browser} ${req.useragent.version}`
+    request.useragent && request.useragent.browser
+      ? `${request.useragent.browser} ${request.useragent.version}`
       : "unknown";
   const platform =
-    req.useragent && req.useragent.platform
-      ? req.useragent.platform.toString()
+    request.useragent && request.useragent.platform
+      ? request.useragent.platform.toString()
       : "unknown";
   const os =
-    req.useragent && req.useragent.os ? req.useragent.os.toString() : "unknown";
+    request.useragent && request.useragent.os ? request.useragent.os.toString() : "unknown";
   const device =
-    req.useragent && req.useragent.device
-      ? req.useragent.device.toString()
+    request.useragent && request.useragent.device
+      ? request.useragent.device.toString()
       : "unknown";
 
-  const isMobile = (req.useragent && req.useragent.isMobile) || false;
-  const isDesktop = (req.useragent && req.useragent.isDesktop) || false;
-  const isTablet = (req.useragent && req.useragent.isTablet) || false;
+  const isMobile = (request.useragent && request.useragent.isMobile) || false;
+  const isDesktop = (request.useragent && request.useragent.isDesktop) || false;
+  const isTablet = (request.useragent && request.useragent.isTablet) || false;
 
   const deviceType = isMobile
     ? "Mobile"

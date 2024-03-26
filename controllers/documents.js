@@ -12,7 +12,6 @@ const {
   getObjectSignedUrl,
   uploadFile,
 } = require("../util/aws/s3");
-const crypto = require("crypto");
 const { checkScheme } = require("./schemes");
 
 const LOG_LEVEL = {
@@ -40,9 +39,10 @@ const CONTROLLER = {
   DELETE_DOCUMENT: "controllers/documents.js/deleteDocument",
   DELETE_DOCS_BY_USERNAME: "controllers/documents.js/deleteDocumentByUserName",
 };
-const generateFileName = (bytes = 32) =>
-  crypto.randomBytes(bytes).toString("hex");
-
+const generateFileName = (bytes = 32) => {
+  const randomString = Math.random().toString(36).substring(2, bytes + 2);
+  return randomString;
+};
 exports.getDocumentsByOwner = async (request, response) => {
   let userId;
   let documentOwnerId;
