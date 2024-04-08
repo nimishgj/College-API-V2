@@ -48,7 +48,9 @@ userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
     return next(); // Return here to prevent moving to the next middleware
   }
+  console.log(123)
   const salt = await bcrypt.genSalt(10);
+  console.log(123)
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });

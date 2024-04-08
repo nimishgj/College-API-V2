@@ -14,31 +14,15 @@ const {
 } = require("../util/aws/s3");
 const { checkScheme } = require("./schemes");
 
-const LOG_LEVEL = {
-  INFO: "INFO",
-  ERROR: "ERROR",
-};
+const {LOG_LEVEL} = require("../constants/LogLevel")
 
-const HTTP_STATUS = {
-  OK: 200,
-  INTERNAL_SERVER_ERROR: 500,
-};
+const {HTTP_STATUS} = require("../constants/HttpStatus")
 
-const LOG_TYPE = {
-  REQUEST: "API REQ",
-  ERROR_GENERATION: "ERR GEN",
-};
+const {LOG_TYPE} =  require("../constants/LogType")
 
-const CONTROLLER = {
-  GET_DOCS_BY_OWNER: "controllers/documents.js/getDocumentsByOwner",
-  GET_DOCS_BY_SCHEME: "controllers/documents.js/getDocumentsByScheme",
-  GET_DOCS_BY_SUBJECT: "controllers/documents.js/getDocumentsBySubject",
-  GET_ALL_DOCS: "controllers/documents.js/getDocuments",
-  UPLOAD_DOCUMENT: "controllers/documents.js/uploadDocument",
-  DOWNLOAD_DOCUMENT: "controllers/documents.js/downloadDocument",
-  DELETE_DOCUMENT: "controllers/documents.js/deleteDocument",
-  DELETE_DOCS_BY_USERNAME: "controllers/documents.js/deleteDocumentByUserName",
-};
+const {CONTROLLER} = require("../constants/DocumentsController")
+const {RESPONSE_MESSAGE} = require("../constants/DocumentsController")
+
 const generateFileName = (bytes = 32) => {
   const randomString = Math.random().toString(36).substring(2, bytes + 2);
   return randomString;
@@ -180,7 +164,7 @@ exports.getDocuments = async (request, response) => {
     console.log(error);
     log(
       request,
-      `Error Occured While Fetching All the Documents`,
+      RESPONSE_MESSAGE.FETCH_ERROR,
       CONTROLLER.GET_ALL_DOCS,
       LOG_TYPE.ERROR_GENERATION,
       LOG_LEVEL.ERROR
@@ -206,12 +190,12 @@ exports.uploadDocument = async (request, response) => {
     const isSchemeValid = await checkScheme(scheme, subject);
 
     if (!isSchemeValid) {
-      return sendError(response, "Invalid Scheme or Subject Provided");
+      return sendError(response, RESPONSE_MESSAGE.INVALID_SCHEME_SUBJECT);
     }
 
     const existingDocument = await documents.findOne({ name: name });
     if (existingDocument) {
-      return sendError(response, "File with the Same Name Exists");
+      return sendError(response, RESPONSE_MESSAGE.SAME_FILE_NAME);
     }
 
     const document = new documents({
@@ -236,12 +220,12 @@ exports.uploadDocument = async (request, response) => {
 
     response
       .status(HTTP_STATUS.OK)
-      .json({ success: true, message: "Document Uploaded Successfully" });
+      .json({ success: true, message: RESPONSE_MESSAGE.DOCUMENT_UPLOADED });
   } catch (error) {
     console.log(error);
     log(
       request,
-      `Error Occured While Uploading Document`,
+      RESPONSE_MESSAGE.DOCUMENT_UPLOAD_ERROR,
       CONTROLLER.UPLOAD_DOCUMENT,
       LOG_TYPE.ERROR_GENERATION,
       LOG_LEVEL.ERROR
@@ -305,7 +289,7 @@ exports.deleteDocument = async (request, response) => {
     );
     response
       .status(HTTP_STATUS.OK)
-      .json({ success: true, message: "File Deleted Successfully" });
+      .json({ success: true, message: RESPONSE_MESSAGE.FILE_DELETION_SUCCESS });
   } catch (error) {
     log(
       request,

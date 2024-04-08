@@ -7,6 +7,11 @@ const Users = require("../models/User.model");
 const { log } = require("../middleware/logger/logger");
 const { sendError, sendServerError } = require("../util/Responses");
 
+const { RESPONSE_MESSAGE} = require("../constants/Logs")
+const { CONTROLLER} = require("../constants/Logs")
+
+const { LOG_TYPE } = require("../constants/LogType");
+
 exports.sendLogFile = async (request, response) => {
   try {
     const userId = request.user._id.toString();
@@ -32,8 +37,8 @@ exports.sendLogFile = async (request, response) => {
     log(
       request,
       `${user.name} Downloaded the Log File`,
-      "controllers/logs.js/sendLogFile",
-      "api request",
+      CONTROLLER.SEND_LOG_FILE,
+      LOG_TYPE.REQUEST,
       "info"
     );
 
@@ -66,8 +71,8 @@ exports.sendLogFile = async (request, response) => {
         console.log(error);
         log(
           request,
-          "Error Occurred While Downloading the Log File",
-          "controllers/logs.js/sendLogFile-creating CSV file",
+          RESPONSE_MESSAGE.DOWNLOAD_ERROR,
+          CONTROLLER.SEND_LOG_FILE_CSV,
           "api request",
           "error"
         );
@@ -77,9 +82,9 @@ exports.sendLogFile = async (request, response) => {
     console.log(error);
     log(
       request,
-      "Error Occurred While Downloading the Log File",
-      "controllers/logs.js/sendLogFile",
-      "api request",
+      RESPONSE_MESSAGE.DOWNLOAD_ERROR,
+      CONTROLLER.SEND_LOG_FILE,
+      LOG_TYPE.REQUEST,
       "error"
     );
     sendServerError(response);
@@ -100,8 +105,8 @@ exports.getRecentLogs = async (request, response) => {
     log(
       request,
       `${user.name} Fetched Recent 10 Logs`,
-      "controllers/logs.js/getRecentLogs",
-      "api request",
+      CONTROLLER.GET_RECENT_LOGS,
+      LOG_TYPE.REQUEST,
       "info"
     );
 
@@ -109,9 +114,9 @@ exports.getRecentLogs = async (request, response) => {
   } catch (error) {
     log(
       request,
-      `Error Occured While Fetching Recent 10 Logs`,
-      "controllers/logs.js/getRecentLogs",
-      "api request",
+      RESPONSE_MESSAGE.FETCH_ERROR,
+      CONTROLLER.GET_RECENT_LOGS,
+      LOG_TYPE.REQUEST,
       "error"
     );
     sendServerError(response);

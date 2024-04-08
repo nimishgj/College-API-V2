@@ -6,32 +6,21 @@ const { sendError } = require("../../util/Responses");
 const { isValidObjectId } = require("mongoose");
 const { log } = require("../logger/logger");
 
-const RESPONSE_MESSAGE ={
-  INVALID_TOKEN_MESSAGE:"Invalid:token Please Login to Continue" ,
-  UNAUTHORIZED:"You are not authorized to access this route",
-  INVALID_USER:"User Not Found"
-}
+const { LOG_TYPE } = require("../../constants/LogType");
 
-const LOG_TYPE = {
-  REQUEST: "API REQ",
-  ERROR_GENERATION: "ERR GEN",
-};
+const { RESPONSE_MESSAGE } = require("../../constants/AuthMidlleware");
 
 exports.protect = async (request, response, next) => {
   let token;
   try {
     token = request.cookies.jwt;
   } catch (error) {
-    sendError(
-      response,
-      "Invalid Token Provided. Please Login again to continue",
-      401
-    );
+    sendError(response, RESPONSE_MESSAGE.INVALID_TOKEN_MESSAGE, 401);
     log(
       request,
-      "Invalid Token Provided. Please Login again to continue",
+      RESPONSE_MESSAGE.INVALID_TOKEN_MESSAGE,
       "middleware/authMiddleware.js/protect",
-      "api request",
+      LOG_TYPE.REQUEST,
       "error"
     );
     return;
@@ -47,12 +36,12 @@ exports.protect = async (request, response, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     if (!isValidObjectId(decoded.userId)) {
-      return sendError(response, "Unautherised Access", 401);
+      return sendError(response, RESPONSE_MESSAGE.UNAUTHORIZED, 401);
     }
 
     const user = await Users.findOne({ _id: decoded.userId });
 
-    if (!user) return sendError(response, "Invalid User Id Found", 404);
+    if (!user) return sendError(response, RESPONSE_MESSAGE.INVALID_USER_ID, 404);
 
     if (role !== user.role) {
       return sendError(response, RESPONSE_MESSAGE.UNAUTHORIZED, 401);
@@ -70,16 +59,12 @@ exports.protect = async (request, response, next) => {
     next();
   } catch (error) {
     console.log(error);
-    sendError(
-      response,
-      RESPONSE_MESSAGE.INVALID_TOKEN_MESSAGE,
-      400
-    );
+    sendError(response, RESPONSE_MESSAGE.INVALID_TOKEN_MESSAGE, 400);
     log(
       request,
       RESPONSE_MESSAGE.INVALID_TOKEN_MESSAGE,
       "middleware/authMiddleware.js/protect",
-      "api request",
+      LOG_TYPE.REQUEST,
       "error"
     );
   }
@@ -90,41 +75,38 @@ exports.protectAdminRotes = async (request, response, next) => {
   try {
     token = request.cookies.jwt;
   } catch (error) {
-    sendError(
-      response,
-      RESPONSE_MESSAGE.INVALID_TOKEN_MESSAGE,
-      401
-    );
+    sendError(response, RESPONSE_MESSAGE.INVALID_TOKEN_MESSAGE, 401);
     log(
       request,
       RESPONSE_MESSAGE.INVALID_TOKEN_MESSAGE,
       "middleware/authMiddleware.js/protect",
-      "api request",
+      LOG_TYPE.REQUEST,
       "error"
     );
-    return; // Stop execution here after sending the error response
+    return;
   }
 
   if (!token) {
-    return sendError(response, "Please Login to Continue", 401);
+    return sendError(response, RESPONSE_MESSAGE.LOGIN_AGAIN, 401);
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     if (!isValidObjectId(decoded.userId)) {
-      return sendError(response, "Unautherised Access", 401);
+      return sendError(response, RESPONSE_MESSAGE.UNAUTHORIZED, 401);
     }
 
     const user = await Users.findOne({ _id: decoded.userId });
 
-    if (!user) return sendError(response, "Invalid User Id Found", 404);
+    if (!user)
+      return sendError(response, RESPONSE_MESSAGE.INVALID_USER_ID, 404);
 
     if (user.isVerified === false)
-      return sendError(response, "Please Verify Your Email First", 401);
+      return sendError(response, RESPONSE_MESSAGE.VERIFY_EMAIL, 401);
 
     if (user.role !== "admin") {
-      return sendError(response, "You are not authorized to access this route", 401);
+      return sendError(response, RESPONSE_MESSAGE.UNAUTHORIZED, 401);
     }
     if (user._id != decoded.userId) {
       return sendError(response, "User Not Found", 404);
@@ -132,16 +114,12 @@ exports.protectAdminRotes = async (request, response, next) => {
     request.user = user;
     next();
   } catch (error) {
-    sendError(
-      response,
-      RESPONSE_MESSAGE.INVALID_TOKEN_MESSAGE,
-      401
-    );
+    sendError(response, RESPONSE_MESSAGE.INVALID_TOKEN_MESSAGE, 401);
     log(
       request,
       RESPONSE_MESSAGE.INVALID_TOKEN_MESSAGE,
       "middleware/authMiddleware.js/protect",
-      "api request",
+      LOG_TYPE.REQUEST,
       "error"
     );
   }

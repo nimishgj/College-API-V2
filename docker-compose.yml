@@ -32,7 +32,7 @@ services:
     depends_on:
       - mongo
     volumes:
-      - .:/home/node/app   # Mount current directory into the container at /home/node/app
+      - .:/home/node/app 
 
   mongo-express:
     image: mongo-express

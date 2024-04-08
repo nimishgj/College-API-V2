@@ -47,7 +47,7 @@ app.get("/", (request, response) => {
     response.status(200).send("Server is UP and Running");
 });
 
-app.use("/Users", UserRoutes);
+app.use("/users", UserRoutes);
 app.use("/Documents", DocumentsRoutes);
 app.use("/Admin", AdminRoutes);
 app.use("/Scheme", SchemeRoutes);
