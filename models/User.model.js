@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
+const argon2 = require('argon2');
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -41,18 +41,22 @@ const userSchema = new mongoose.Schema({
 });
 
 userSchema.methods.matchPassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
+  try {
+    return await argon2.verify(this.password, enteredPassword);
+  } catch (error) {
+    throw error;
+  }
 };
 
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
-    return next(); // Return here to prevent moving to the next middleware
+    return next(); 
   }
-  console.log(123)
-  const salt = await bcrypt.genSalt(10);
-  console.log(123)
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
+  try {
+    this.password = await argon2.hash(this.password,10);
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
-
 module.exports = mongoose.model("Users", userSchema);
